@@ -6,18 +6,19 @@ from ipaddress import ip_address
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from random import uniform
 
 
 FILENAME = "/var/log/httpd/access_log"
 MAX_COUNT_ATTACS = 1
-TIME_TO_LIVE = 5888888888 
+TIME_TO_LIVE = 173063420
 TIMER = int(time.time())
 TIME_LIMIT = 10
 
 
 
 main_data_fr = pd.DataFrame([[0, 0, 0]],columns = ["err", "time", "cnt"], index=["127.0.0.0"])
-time_time_data_fr = pd.DataFrame([[[0]]],columns = ["time"], index=["127.0.0.0"])
+time_time_data_fr = pd.DataFrame([[[1730634200]]],columns = ["time"], index=["127.0.0.0"])
 
 '''
 def block_ip(attacker_ip):
@@ -36,10 +37,45 @@ def graph_builder():
     if pid == 0:
         for label, content in time_time_data_fr.items(): 
             for i in range(len(content)):
-                t = content.iloc[i]
-                print(i,  content.iloc[i])
-                plt.plot(t,t,'ro')
-                plt.show()
+                time_list = content.iloc[i]
+                
+                # INSTEAD I FIND IP TO BLOCK
+
+                time1 = [time_list[0]]
+                cnt1 = [0]                
+                for i in range(len(time_list)):
+                    if time_list[i] in time1:
+                        cnt1[time1.index(time_list[i])] += 1
+                    else:
+                        time1.append(time_list[i])
+                        cnt1.append(1)
+
+                if len(time1) != 1:
+                    time_dif = [0]
+                    for i in range(1,len(time1)):
+                        rand_num = uniform(0.0001,0.0002) 
+                        time_dif.append(time1[i]-time1[i-1]+rand_num)
+
+                    print("time1 ", time1)
+                    print("cnt1  ", cnt1)
+                    time_dif_div = [0]
+                    for i in range(1,len(time_dif)):
+                        time_dif_div.append((1/time_dif[i]))
+
+                    f1 = [0]
+                    for i in range(1,len(time_dif_div)):
+                        ff1 = ( (time_dif_div[i])**2 + (cnt1[i])**2  )
+                        f1.append(ff1)
+
+                    print("time_dif_div ",time_dif_div)
+                    print("f1           ",f1)
+                    plt.plot(time_dif_div, f1,'o')
+                else:
+                    print("CHECK COUNT CNT\n")
+
+
+                
+        plt.show()
     else:
         return -1
 
@@ -155,7 +191,7 @@ def main():
 
             print('\033[1;92m1MIN   1MIN    1MIN SPENT\033[00m')
             graph_builder()
-            time_time_data_fr = pd.DataFrame([[[0]]],columns = ["time"], index=["127.0.0.0"])
+            time_time_data_fr = pd.DataFrame([[[1730634200]]],columns = ["time"], index=["127.0.0.0"])
             #print('\033[1;37m{}\033[00m'.format('\ntime_time_data_fr\n'), time_time_data_fr)
 
         if (fd < 0): 
@@ -201,4 +237,26 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+'''
+GOOD LOGS EXAMPLE
+
+10.193.93.249 403 1730634201
+10.193.93.249 403 1730634202
+10.193.93.249 403 1730634203
+10.193.93.249 403 1730634204
+10.193.93.249 403 1730634230
+10.193.93.249 403 1730634240
+10.193.93.249 403 1730634250
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+10.193.93.249 403 1730634265
+
+'''
 
