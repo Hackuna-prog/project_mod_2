@@ -4,20 +4,42 @@ from threading import Thread
 import time
 from ipaddress import ip_address
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 FILENAME = "/var/log/httpd/access_log"
-MAX_COUNT_ATTACS = 3
+MAX_COUNT_ATTACS = 1
 TIME_TO_LIVE = 5888888888 
-NUM_ITEMS = 4
+TIMER = int(time.time())
+TIME_LIMIT = 10
 
-temp_list = [0, 0, 0]
-main_data_fr = pd.DataFrame([temp_list],columns = ["err", "time", "cnt"], index=["127.0.0.0"])
 
+
+main_data_fr = pd.DataFrame([[0, 0, 0]],columns = ["err", "time", "cnt"], index=["127.0.0.0"])
+time_time_data_fr = pd.DataFrame([[[0]]],columns = ["time"], index=["127.0.0.0"])
+
+'''
 def block_ip(attacker_ip):
     pid = os.fork()
     if pid == 0:
         os.execl("/usr/sbin/iptables", "iptables", "-I", "INPUT", "1", "--src", attacker_ip, "-j", "REJECT")
+    else:
+        return -1
+
+    os.wait()
+'''
+
+def graph_builder():
+    global time_time_data_fr
+    pid = os.fork()
+    if pid == 0:
+        for label, content in time_time_data_fr.items(): 
+            for i in range(len(content)):
+                t = content.iloc[i]
+                print(i,  content.iloc[i])
+                plt.plot(t,t,'ro')
+                plt.show()
     else:
         return -1
 
@@ -37,6 +59,8 @@ def consume_strings(queue):
             continue
         else:
             global main_data_fr
+            global time_time_data_fr
+            print('\033[1;92m{}\033[00m'.format('\nnew item:    '),  item)
             #print(f'new item:    {item}')
             
 
@@ -75,7 +99,7 @@ def consume_strings(queue):
             #print('columns:\n',time_column,'\n',cnt_column,'\n')
             
             try:
-                time_column.get(item_ip)
+                time_column.get(item_ip) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 #print('ININININI')
                 last_attack_time = time_column.get(item_ip)
                 if (curr_time - last_attack_time) <= TIME_TO_LIVE:
@@ -91,14 +115,29 @@ def consume_strings(queue):
                 main_data_fr = pd.concat([main_data_fr, temp_df])
                 #print('mmain_df:\n', main_data_fr, '\n')
 
-            
+        
+
             curr_count = main_data_fr.at[item_ip, "cnt"]
             if curr_count >= MAX_COUNT_ATTACS:
-                print('\033[91m{}\033[00m'.format('ATTACKS!!! block incoming connections by firewall'),  item_ip)
-                block_ip(item_ip) 
+                extrime_time_col = time_time_data_fr["time"] 
+                try:             
+                    extrime_time_col.get(item_ip)
+                    temp_extrim_list = extrime_time_col.get(item_ip)
+                    time_graf_list = time_time_data_fr.at[item_ip, "time"]
+                    time_graf_list.append(item_time)
+                    time_time_data_fr.at[item_ip, "time"] = time_graf_list
+                except:
+                    temp_extrim_df =  pd.DataFrame([[[item_time]]],columns = ["time"],\
+                    index=[item_ip])
+                    time_time_data_fr = pd.concat([time_time_data_fr, temp_extrim_df])
+                    '''
+                    
+                    print('\033[1;92m{}\033[00m'.format('ATTACKS!!! block incoming connections by firewall'),  item_ip)
+                    block_ip(item_ip) 
             
-            
-            #print(main_data_fr, '\n\n')
+                        '''
+            print('\033[1;36m{}\033[00m'.format('\ntime_time_data_fr\n'), time_time_data_fr)
+            print('\033[1;36m{}\033[00m'.format('\nmain_data_fr\n'),  main_data_fr)
             time.sleep(0.5)
 
             queue.task_done()
@@ -108,6 +147,16 @@ def main():
     fd = -1 
     
     while(1):
+
+        global TIMER
+        global time_time_data_fr
+        if int(time.time()) - TIMER >= TIME_LIMIT:
+            TIMER = int(time.time())
+
+            print('\033[1;92m1MIN   1MIN    1MIN SPENT\033[00m')
+            graph_builder()
+            time_time_data_fr = pd.DataFrame([[[0]]],columns = ["time"], index=["127.0.0.0"])
+            #print('\033[1;37m{}\033[00m'.format('\ntime_time_data_fr\n'), time_time_data_fr)
 
         if (fd < 0): 
             while(fd < 0):
